@@ -14,6 +14,7 @@ import { getConnection, getEmpresa } from "./helpers/getConnection.js";
 import { authAdmin } from "./middlewares/authAdmin.js";
 import { authToken } from "./middlewares/authToken.js";
 import { ultimos8, patronTelefono, coincideTelefono } from "./helpers/telefonos.js";
+import planesRouter from "./routes/planes.js";
 
 dotenv.config();
 
@@ -37,7 +38,7 @@ app.get("/", async (req, res) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PA API - Documentación</title>
+  <title>API PLANES - Documentación </title>
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; line-height: 1.6; color: #1f2328; background: #fff; }
     h1, h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
@@ -72,6 +73,9 @@ app.get("/health", async (req, res) => {
 });
 
 
+// API v1
+app.use("/v1", planesRouter);
+
 app.post("/createUser", authAdmin, async (req, res) => {
   const { email, password, nombre } = req.body;
 
@@ -85,7 +89,7 @@ app.post("/createUser", authAdmin, async (req, res) => {
     const sequelize = getConnection("pa7_comun");
 
     const existente = await sequelize.query(
-      "SELECT id FROM usuarios_api_pa6 WHERE email = :email",
+      "SELECT id FROM usuarios_api_planes WHERE email = :email",
       { replacements: { email }, type: QueryTypes.SELECT }
     );
     if (existente.length) {
@@ -94,7 +98,7 @@ app.post("/createUser", authAdmin, async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const [id] = await sequelize.query(
-      "INSERT INTO usuarios_api_pa6 (email, password, nombre) VALUES (:email, :password, :nombre)",
+      "INSERT INTO usuarios_api_planes (email, password, nombre) VALUES (:email, :password, :nombre)",
       {
         replacements: { email, password: hashedPassword, nombre },
         type: QueryTypes.INSERT,
@@ -124,7 +128,7 @@ app.post("/getToken", async (req, res) => {
 
   try {
     const usuarios = await getConnection("pa7_comun").query(
-      "SELECT id, email, password FROM usuarios_api_pa6 WHERE email = :email",
+      "SELECT id, email, password FROM usuarios_api_planes WHERE email = :email",
       { replacements: { email }, type: QueryTypes.SELECT }
     );
 

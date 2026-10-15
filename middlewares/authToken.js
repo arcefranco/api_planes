@@ -24,7 +24,7 @@ export const authToken = async (req, res, next) => {
 
   try {
     const usuario = await getConnection("pa7_comun").query(
-      "SELECT id, email, nombre FROM usuarios_api_pa6 WHERE id = :id AND email = :email",
+      "SELECT id, email, nombre FROM usuarios_api_planes WHERE id = :id AND email = :email",
       { replacements: { id: decoded.id, email: decoded.email }, type: QueryTypes.SELECT }
     );
     if (!usuario.length) {

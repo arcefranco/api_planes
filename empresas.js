@@ -27,7 +27,7 @@ export const empresas = [
   {
     codigo: 6,
     nombre: "AUTOCERVO",
-    db: "pa7_cv",
+    db: "pa7_acv",
   },
   {
     codigo: 9,
