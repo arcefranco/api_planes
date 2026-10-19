@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API PLANES - Documentación</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+      line-height: 1.6;
+      color: #1f2328;
+      background: #fff;
+    }
+
+    h1,
+    h2 {
+      border-bottom: 1px solid #d0d7de;
+      padding-bottom: .3em;
+    }
+
+    h2 {
+      margin-top: 2em;
+    }
+
+    a {
+      color: #0969da;
+    }
+
+    code {
+      background: #f0f2f4;
+      padding: .15em .35em;
+      border-radius: 4px;
+      font-size: 90%;
+    }
+
+    pre {
+      background: #f6f8fa;
+      padding: 14px 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+      display: block;
+      overflow-x: auto;
+    }
+
+    th,
+    td {
+      border: 1px solid #d0d7de;
+      padding: 6px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #f6f8fa;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #d0d7de;
+      margin: 2em 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 id="api-planes">API PLANES</h1>
+  <p>API REST de sólo lectura para consultar las solicitudes de planes de ahorro en todos sus estados: precargada,
+    pendiente de scoring, scoring OK y rechazada.</p>
+  <p>Todas las respuestas son JSON en UTF-8 (<code>Content-Type: application/json; charset=utf-8</code>).</p>
+  <h2 id="índice">Índice</h2>
+  <ul>
+    <li><a href="#autorizaci%C3%B3n">Autorización</a></li>
+    <li><a href="#get-v1planes">GET /v1/planes</a>
+      <ul>
+        <li><a href="#par%C3%A1metros">Parámetros</a></li>
+        <li><a href="#respuesta">Respuesta</a></li>
+        <li><a href="#paginado">Paginado</a></li>
+        <li><a href="#errores">Errores</a></li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h2 id="autorización">Autorización</h2>
+  <p>Todas las operaciones requieren un <strong>token</strong>. Para obtenerlo:</p>
+  <h3 id="1-solicitar-un-usuario">1. Solicitar un usuario</h3>
+  <p>Los usuarios los crea el administrador de la API. Pedí el alta indicando tu nombre y email; vas a recibir un email
+    y una contraseña.</p>
+  <h3 id="2-obtener-el-token">2. Obtener el token</h3>
+  <pre><code>POST /getToken
+</code></pre>
+  <pre><code class="language-json">{
+  &quot;email&quot;: &quot;usuario@empresa.com&quot;,
+  &quot;password&quot;: &quot;tu_contraseña&quot;
+}
+</code></pre>
+  <p>Respuesta:</p>
+  <pre><code class="language-json">{
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&quot;,
+  &quot;expiresIn&quot;: &quot;24h&quot;
+}
+</code></pre>
+  <p>El token <strong>vence a las 24 horas</strong>. Cuando vence, se vuelve a pedir de la misma forma.</p>
+  <h3 id="3-usar-el-token-en-cada-operación">3. Usar el token en cada operación</h3>
+  <p>Enviá el token en el header <code>Authorization</code> de <strong>cada</strong> pedido, con el prefijo
+    <code>Bearer</code>:</p>
+  <pre><code>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+</code></pre>
+  <h3 id="errores-de-autorización">Errores de autorización</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Motivo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>400</td>
+        <td>Faltan <code>email</code> o <code>password</code> al pedir el token</td>
+      </tr>
+      <tr>
+        <td>401</td>
+        <td>Email o contraseña incorrectos</td>
+      </tr>
+      <tr>
+        <td>401</td>
+        <td>No se envió el token, o el header no tiene el formato <code>Bearer &lt;token&gt;</code></td>
+      </tr>
+      <tr>
+        <td>401</td>
+        <td>Token inválido o expirado (pedir uno nuevo)</td>
+      </tr>
+      <tr>
+        <td>401</td>
+        <td>El usuario del token fue dado de baja</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h2 id="get-v1planes">GET /v1/planes</h2>
+  <p>Devuelve las solicitudes de plan de ahorro. <strong>Sin parámetros, devuelve todas</strong> (de a páginas, ver <a
+      href="#paginado">Paginado</a>).</p>
+  <pre><code>GET /v1/planes?fecha_desde=2026-10-01&amp;fecha_hasta=2026-10-31
+Authorization: Bearer &lt;token&gt;
+</code></pre>
+  <h3 id="parámetros">Parámetros</h3>
+  <p>Todos son opcionales y van en la URL (query string). Si se pasan varios, se combinan con <strong>Y</strong>.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Parámetro</th>
+        <th>Tipo</th>
+        <th>Qué filtra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>fecha_desde</code>, <code>fecha_hasta</code></td>
+        <td><code>AAAA-MM-DD</code></td>
+        <td>Fecha de alta, ambos días inclusive</td>
+      </tr>
+      <tr>
+        <td><code>scoring_desde</code>, <code>scoring_hasta</code></td>
+        <td><code>AAAA-MM-DD</code></td>
+        <td>Fecha de scoring, ambos días inclusive. Sólo devuelve solicitudes en estado <code>scoring_ok</code></td>
+      </tr>
+      <tr>
+        <td><code>estado</code></td>
+        <td>texto</td>
+        <td>Uno de: <code>precargada</code>, <code>pendiente_scoring</code>, <code>scoring_ok</code>,
+          <code>rechazada</code></td>
+      </tr>
+      <tr>
+        <td><code>limite</code></td>
+        <td>entero</td>
+        <td>Registros por página. Por defecto 200, máximo 500</td>
+      </tr>
+      <tr>
+        <td><code>cursor</code></td>
+        <td>texto</td>
+        <td>El <code>siguiente_cursor</code> de la página anterior</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Un parámetro desconocido o mal escrito (por ejemplo <code>fecha_desdee</code>) <strong>no se ignora</strong>:
+    devuelve error 400.</p>
+  <p>Ejemplos:</p>
+  <pre><code># Solicitudes dadas de alta en octubre
+GET /v1/planes?fecha_desde=2026-10-01&amp;fecha_hasta=2026-10-31
+
+# Solicitudes con scoring OK en octubre (aunque se hayan dado de alta antes)
+GET /v1/planes?scoring_desde=2026-10-01&amp;scoring_hasta=2026-10-31
+
+# Sólo las rechazadas
+GET /v1/planes?estado=rechazada
+</code></pre>
+  <h3 id="respuesta">Respuesta</h3>
+  <pre><code class="language-json">{
+  &quot;datos&quot;: [
+    {
+      &quot;numero_solicitud&quot;: &quot;3925&quot;,
+      &quot;fecha_alta&quot;: &quot;2026-09-28&quot;,
+      &quot;vendedor&quot;: &quot;Diego Ezequiel Orellana&quot;,
+      &quot;cuota1_cobrada&quot;: 412500,
+      &quot;es_sena&quot;: false,
+      &quot;debito_automatico&quot;: true,
+      &quot;estado&quot;: &quot;scoring_ok&quot;,
+      &quot;fecha_scoring&quot;: &quot;2026-10-03&quot;,
+      &quot;cliente_nombre&quot;: &quot;Juan Pérez&quot;
+    }
+  ],
+  &quot;siguiente_cursor&quot;: null,
+  &quot;generado_en&quot;: &quot;2026-10-13T18:45:00-03:00&quot;
+}
+</code></pre>
+  <table>
+    <thead>
+      <tr>
+        <th>Campo</th>
+        <th>Tipo</th>
+        <th>Descripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>numero_solicitud</code></td>
+        <td>texto</td>
+        <td>Número de solicitud</td>
+      </tr>
+      <tr>
+        <td><code>fecha_alta</code></td>
+        <td><code>AAAA-MM-DD</code></td>
+        <td>Día de alta de la solicitud</td>
+      </tr>
+      <tr>
+        <td><code>vendedor</code></td>
+        <td>texto</td>
+        <td>Nombre del vendedor</td>
+      </tr>
+      <tr>
+        <td><code>cuota1_cobrada</code></td>
+        <td>número</td>
+        <td>Importe cobrado de la cuota 1. <code>0</code> si no se cobró nada</td>
+      </tr>
+      <tr>
+        <td><code>es_sena</code></td>
+        <td>booleano</td>
+        <td><code>true</code> si lo cobrado es una seña y no la cuota 1 completa</td>
+      </tr>
+      <tr>
+        <td><code>debito_automatico</code></td>
+        <td>booleano</td>
+        <td><code>true</code> si el cliente adhirió al débito automático</td>
+      </tr>
+      <tr>
+        <td><code>estado</code></td>
+        <td>texto</td>
+        <td><code>precargada</code>, <code>pendiente_scoring</code>, <code>scoring_ok</code> o <code>rechazada</code>
+        </td>
+      </tr>
+      <tr>
+        <td><code>fecha_scoring</code></td>
+        <td><code>AAAA-MM-DD</code> o <code>null</code></td>
+        <td>Día del scoring OK. Sólo viene cuando <code>estado</code> es <code>scoring_ok</code></td>
+      </tr>
+      <tr>
+        <td><code>cliente_nombre</code></td>
+        <td>texto</td>
+        <td>Nombre del cliente o razón social</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Además de <code>datos</code>, la respuesta trae <code>siguiente_cursor</code> (ver abajo) y
+    <code>generado_en</code>, la fecha y hora de la consulta en hora de Argentina.</p>
+  <h3 id="paginado">Paginado</h3>
+  <p>Los resultados vienen ordenados por <code>numero_solicitud</code> ascendente y de a <code>limite</code> registros
+    por página.</p>
+  <ul>
+    <li>Si <code>siguiente_cursor</code> es <code>null</code>, no hay más páginas.</li>
+    <li>Si trae un valor, hay más: repetí la <strong>misma consulta, con los mismos filtros</strong>, agregando
+      <code>cursor=&lt;ese valor&gt;</code>.</li>
+  </ul>
+  <p>El cursor es un texto opaco: no hay que interpretarlo ni armarlo a mano, sólo devolverlo tal cual.</p>
+  <pre><code>GET /v1/planes?fecha_desde=2026-01-01&amp;limite=2
+→ &quot;siguiente_cursor&quot;: &quot;eyJucyI6MzkyNn0&quot;
+
+GET /v1/planes?fecha_desde=2026-01-01&amp;limite=2&amp;cursor=eyJucyI6MzkyNn0
+→ trae la página siguiente, y así hasta que siguiente_cursor sea null
+</code></pre>
+  <p>Ejemplo para traer todas las páginas (JavaScript):</p>
+  <pre><code class="language-js">let todos = [];
+let cursor = null;
+
+do {
+  const params = new URLSearchParams({ fecha_desde: &quot;2026-01-01&quot;, limite: &quot;500&quot; });
+  if (cursor) params.set(&quot;cursor&quot;, cursor);
+
+  const r = await fetch(`https://&lt;api-planes.giama.com.ar&gt;/v1/planes?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const body = await r.json();
+
+  todos.push(...body.datos);
+  cursor = body.siguiente_cursor;
+} while (cursor);
+</code></pre>
+  <h3 id="errores">Errores</h3>
+  <p>Los errores de este endpoint devuelven el código HTTP correspondiente y este cuerpo:</p>
+  <pre><code class="language-json">{ &quot;error&quot;: { &quot;codigo&quot;: &quot;parametro_invalido&quot;, &quot;mensaje&quot;: &quot;fecha_desde no es una fecha AAAA-MM-DD&quot; } }
+</code></pre>
+  <table>
+    <thead>
+      <tr>
+        <th>Código HTTP</th>
+        <th><code>codigo</code></th>
+        <th>Cuándo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>400</td>
+        <td><code>parametro_desconocido</code></td>
+        <td>Se envió un parámetro que no existe o está mal escrito</td>
+      </tr>
+      <tr>
+        <td>400</td>
+        <td><code>parametro_invalido</code></td>
+        <td>Fecha que no es <code>AAAA-MM-DD</code>, <code>estado</code> desconocido, <code>limite</code> fuera de
+          1–500, <code>cursor</code> inválido o parámetro repetido</td>
+      </tr>
+      <tr>
+        <td>401</td>
+        <td>—</td>
+        <td>Falta el token, o es inválido o expiró (ver <a href="#errores-de-autorizaci%C3%B3n">Errores de
+            autorización</a>)</td>
+      </tr>
+      <tr>
+        <td>500</td>
+        <td><code>error_interno</code></td>
+        <td>Error interno</td>
+      </tr>
+      <tr>
+        <td>503</td>
+        <td><code>servicio_no_disponible</code></td>
+        <td>No se pudo conectar con la base de datos. Reintentar en unos minutos</td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+
+</html>

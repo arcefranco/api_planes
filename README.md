@@ -166,7 +166,7 @@ do {
   const params = new URLSearchParams({ fecha_desde: "2026-01-01", limite: "500" });
   if (cursor) params.set("cursor", cursor);
 
-  const r = await fetch(`https://<host>/v1/planes?${params}`, {
+  const r = await fetch(`https://api-planes.giama.com.ar/v1/planes?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const body = await r.json();
