@@ -44,7 +44,7 @@ p.FechaPreScoring, CONCAT(p.Nombres,p.Apellido) cliente_nombre
 FROM pre_solicitudes p LEFT JOIN
 pre_senias ps ON p.Numero = ps.Numero LEFT JOIN
 vendedores v ON p.Vendedor = v.Codigo
-WHERE p.EstadoPreScoring IN (0,1,2,3,4)
+WHERE p.EstadoPreScoring IN (0,1,2,3,4) AND IFNULL(p.AnuladaCliente,0) = 0
 GROUP BY p.Solicitud
 `;
 
@@ -176,7 +176,7 @@ const leerParametros = (query) => {
 // ---------- endpoint ----------
 
 // GET /v1/planes
-router.get("/planes",  authToken, async (req, res) => {
+router.get("/planes", authToken, async (req, res) => {
   try {
     const { condiciones, replacements, limite } = leerParametros(req.query);
 
