@@ -30,12 +30,12 @@ NULL AS cliente_nombre
 FROM rendicion r
 LEFT JOIN vendedores v ON r.Vendedor = v.Codigo
 LEFT JOIN pre_solicitudes p ON r.Solicitud = p.Solicitud
-WHERE net_getnumpresol_Rendicion(r.Marca,r.Solicitud) <> 1 AND IFNULL(p.AnuladaCliente,0) = 0
+WHERE net_getnumpresol_Rendicion(r.Marca,r.Solicitud) NOT IN (1,3) AND IFNULL(p.AnuladaCliente,0) = 0
 
 UNION ALL
 
 SELECT p.Solicitud, p.FechaAlta, v.Nombre nomVendedor,
-SUM(ps.Importe) cuota1_cobrada, IF(IFNULL(SUM(ps.Importe),0)>p.ImporteTotalCuota,1,0), p.DebitoAutomatico,
+SUM(ps.Importe) cuota1_cobrada, IF(IFNULL(SUM(ps.Importe),0)<p.ImporteTotalCuota,1,0), p.DebitoAutomatico,
 CASE     WHEN p.EstadoPreScoring = 2 THEN "scoring_ok"
                 WHEN p.EstadoPreScoring = 0 THEN "pendiente_scoring"
                 WHEN (p.EstadoPreScoring = 1 OR p.EstadoPreScoring = 3 OR p.EstadoPreScoring = 4) THEN "rechazada"
