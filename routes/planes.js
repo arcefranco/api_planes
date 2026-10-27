@@ -26,7 +26,7 @@ const LIMITE_MAXIMO = 500;
 const CONSULTA_BASE = `
 SELECT r.Solicitud AS numero_solicitud, r.fechaAlta AS fecha_alta, v.Nombre AS vendedor,
 NULL AS cuota1_cobrada, NULL AS es_sena, NULL AS debito_automatico, "precargada" AS estado, NULL AS fecha_scoring,
-NULL AS cliente_nombre
+NULL AS cliente_nombre, r.fechaAlta AS fecha_alta_rend
 FROM rendicion r
 LEFT JOIN vendedores v ON r.Vendedor = v.Codigo
 LEFT JOIN pre_solicitudes p ON r.Solicitud = p.Solicitud
@@ -40,10 +40,11 @@ CASE     WHEN p.EstadoPreScoring = 2 THEN "scoring_ok"
                 WHEN p.EstadoPreScoring = 0 THEN "pendiente_scoring"
                 WHEN (p.EstadoPreScoring = 1 OR p.EstadoPreScoring = 3 OR p.EstadoPreScoring = 4) THEN "rechazada"
   END estado,
-p.FechaPreScoring, CONCAT(p.Nombres,p.Apellido) cliente_nombre
+p.FechaPreScoring, CONCAT(p.Nombres,p.Apellido) cliente_nombre, rendicion.fechaAlta AS fecha_alta_rend
 FROM pre_solicitudes p LEFT JOIN
 pre_senias ps ON p.Numero = ps.Numero LEFT JOIN
-vendedores v ON p.Vendedor = v.Codigo
+vendedores v ON p.Vendedor = v.Codigo LEFT JOIN
+rendicion ON p.Solicitud = rendicion.Solicitud
 WHERE p.EstadoPreScoring IN (0,1,2,3,4) AND IFNULL(p.AnuladaCliente,0) = 0
 GROUP BY p.Solicitud
 `;
@@ -184,7 +185,7 @@ router.get("/planes", authToken, async (req, res) => {
     const sql = `
       SELECT
         numero_solicitud,
-        DATE_FORMAT(fecha_alta, '%Y-%m-%d') AS fecha_alta,
+        DATE_FORMAT(fecha_alta_rend, '%Y-%m-%d') AS fecha_alta,
         vendedor,
         cuota1_cobrada,
         es_sena,
